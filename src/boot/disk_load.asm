@@ -2,7 +2,7 @@
 ; AL: Amount of sectors to read.
 ; BX: Address to store the sectors.
 ; DL: Boot drive.
-; Returns AH != 0 if there was an error.
+; Returns AL equal to the amount of sectors read.
 [bits 16]
 
 disk_load:

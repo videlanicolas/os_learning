@@ -19,9 +19,9 @@ KERNEL_OFFSET equ 0x1000	; Offset to load the Kernel.
 	call println
 
 	mov bx, KERNEL_OFFSET	; BX marks the destination for our read sectors.
-	mov dh, 15		; Read 15 sectors.
+	mov al, 15		; Read 15 sectors.
 	call disk_load		; Call our routine to load sectors to memory.
-	cmp ah, 0		; AH will indicate if there was an error.
+	cmp al, 15		; AH will indicate if there was an error.
 	jne .boot_fail
 
 	; Make sure A20 is enabled.
@@ -62,7 +62,7 @@ protected_mode_start:
 	mov es, ax		; Extra segment equal to data segment.
 	mov esp, 090000h	; ESP is the stack pointer in 32 bit world. Set it to a far away value (+1 MiB). 
 
-	mov ebx, [KERN_BOOT_MSG]; Tell the user that we're booting the Kernel.
+	mov ebx, KERN_BOOT_MSG; Tell the user that we're booting the Kernel.
 	call println_pm
 
 	; Call our Kernel entry point.
