@@ -17,7 +17,7 @@ extensions = ["myst_parser"]
 
 templates_path = ['_templates']
 exclude_patterns = []
-
+root_doc = 'source/index.md'
 
 
 # -- Options for HTML output -------------------------------------------------
