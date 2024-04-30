@@ -1,5 +1,5 @@
 os: bootloader kernel
-	rm bin/os.img || true
+	mkdir bin || rm bin/os.img
 	cat bin/bootloader.img bin/kernel.img > bin/os.img
 
 bootloader: init
