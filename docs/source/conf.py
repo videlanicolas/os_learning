@@ -17,6 +17,7 @@ extensions = ["myst_parser"]
 
 templates_path = ['_templates']
 exclude_patterns = []
+source_suffix = {'.md': 'markdown'}
 # root_doc = 'source/index'
 
 
