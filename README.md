@@ -4,3 +4,7 @@ I always wanted to learn how everything in an operating system works, I learnt t
 ## Resources
 
 The main resource website is [OS dev wiki](https://wiki.osdev.org/), but in there they already say that we're going to need more resources to make an OS.
+
+## OS devlog
+
+I documented all my progress at https://learning-os-from-scratch.readthedocs.io/en/latest, so you can read that to deep dive into all the things I learnt from developing this OS.
