@@ -1,3 +1,6 @@
+run: os
+	qemu-system-i386 -fda bin/os.img
+
 os: bootloader kernel
 	mkdir bin || rm bin/os.img
 	cat bin/bootloader.img bin/kernel.img > bin/os.img
