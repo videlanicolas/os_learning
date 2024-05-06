@@ -37,15 +37,15 @@ After this is done the BIOS will now scan through all the available mass storage
 
 ### EFI and UEFI
 
-16 bit Real Mode sounds so old these days, with 32 and 64 bit CPUs being the majority used by consumers these days. BIOSes came in different flavours and implementations, some would automatically enable the A20 line for you, some others would implement Video memory on different addresses, others might even load the bootloader on a different address altogether. Throughout time BIOSes converged into one way of doing things, but there was never a standard set for the industry on where would things be loaded, what services should be available on interrupts or which mode should the CPU be booted in (Real Mode or Protected Mode). Software developers would assume manufacturers will follow other BIOS implementations and assume things are placed where is generally assumed they are, but this would not be the case for all BIOSes.
+16 bit Real Mode sounds so old these days, with 32 and 64 bit CPUs being the majority used by consumers. BIOSes came in different flavours and implementations, some would automatically enable the A20 line for you, some others would implement Video memory on different addresses, others might even load the bootloader on a different address altogether. Throughout time BIOSes converged into one way of doing things, but there was never a standard set for the industry on where would things be loaded, what services should be available on interrupts or which mode should the CPU be booted in (Real Mode or Protected Mode). Software developers would assume manufacturers will follow other BIOS implementations and assume things are placed where is generally assumed they are, but this would not be the case for all BIOSes.
 
-During the mid 90s Intel started working on an initiative called "Intel Boot Initiative", which focused on making bootling less complicated in order to get more efficient CPUs (and thus better hardware for servers they tried to sell with HP). They designed a standard all BIOS from Intel should follow, things like:
+During the mid 90s Intel started working on an initiative called "Intel Boot Initiative", which focused on making booting less complicated in order to get more efficient CPUs (and thus better hardware for servers they tried to sell with HP). They designed a standard all BIOS from Intel should follow, things like:
 
 * Automatically enable A20.
 * Automatically switch to 32 bit protected mode.
 * Provide standard functions (such as "Disk operations" and "Video operations").
 
-This quickly evolved into a forum called "Unified EFI" involving other companies such as AMD, ARM, Dell, HP, Apple, Lenovo and Microsoft. And thus the UEFI standard was born in 2005 (actually in 2004 first contributed by Intel).
+This quickly evolved into a forum called "Unified EFI forum" involving other companies such as AMD, ARM, Dell, HP, Apple, Lenovo and Microsoft. And thus the UEFI standard was born in 2005 (actually in 2004 first contributed by Intel under the EFI name).
 
 We're not going to go deep into UEFI (at least not now), but just to point out the differences with legacy BIOSes, UEFI provides:
 
