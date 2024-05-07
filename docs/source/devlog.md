@@ -84,7 +84,64 @@ Now in Protected mode we need to find the Kernel's main entry point and jump to 
 
 ## Hello Kernel!
 
-TODO: Explain how we made it to print something to the screen after the Bootloader.
+The Kernel's task is to provide an API to interface with the hardware, this will abstract the Operating System and its applications from the complexities of hardware. The Kernel is just the start of the OS, it's the foundation where everything else is built. The way it exposes its API is through System calls, these are interrupts in the CPU which trigger functionality inside the Kernel. Lets not get ahead of ourselves now with this and focus on just booting the simplets Kernel there is:
+
+```c
+void main() {
+    // We got booted!
+    
+    // Print '!' on the screen, we can access the video memory directly for this.
+    *(0xb8000) = '!';
+    
+    // Hang here with an infinite loop.
+    while (1);
+}
+```
+
+As you might have noted we're using C instead of Assembler, just imagine coding an Operating System entirely in Assembler. I mean you don't have to imagine, just take a look at [MenuetOS](https://www.menuetos.net/). Although we could take the hard path and keep using Assembler to build our Kernel, we opt to use a more human-readable higher language like C. This also brings the benefit of comparing our code with what Linux does.
+
+We compile this to machine code and attach it right next to our bootloader, so when it loads the contiguous sectors from disk it loads this Kernel to memory. But now, where _exactly_ should the bootloader jump to? As in which address should we use in the `JMP` instruction? One could be tempted to say "well the Kernel will be loaded to memory right after the bootloader, so just jump to the next address after the bootloader". Although this might work for now we're never sure `main` will be the first bit of code in the compiled binary. The C compiler will make decisions on where to place code more efficiently, and we're not aware of those decisions when we compile the code. Because of this we need some way to tell the bootloader that we want to target the address of function `main`, whatever that is. This is solved by the magic of "linking".
+
+### Compiler and linker
+
+This is explained in greater detail [here](https://www.cprogramming.com/compilingandlinking.html). The C programming language has a "compiler" and a "linker", the compiler converts source files (`*.c`) to object files (`*.o`) and the linked joins multiple object files into one executable file with machine code.
+
+The compiler's job is to convert the text in the source file to machine code, i.e. functions must have its stack pointer defined (but not the size, the linker will do this afterwards) and proper `RET` with the correct register holding the return value, `if` branches should use `CPM` plus a conditional jump right after, loops should be translated to a subroutine where we jump back to the beggining unless a certain contidion is met, etc. The functions declared on other files are included with the `#include` directive, which includes the header files (`*.h`) which declares the function prototypes. If the source file makes a call to a function declared within the same source file then the compiler can easily figure out where should `CALL` point to, since it'll place the function subroutine at a given position in memory. But if the source file makes a call to a function defined in some other file then we don't know where will that function be in memory, so we don't know what address should be placed on `CALL`. This is the problem the linker solves.
+
+Object files created by the compiler are not directly executable (unless we're compiling a freestanding single file with no include headers, but that's just a very niche edge case), it holds information about the function names and where are the functions called. The object file knows the code must be somewhere, so it places a placeholder saying "I need to call `functionX`, but `functionX` is not defined in this file". The linker receives a list of object files and checks which object calls external functions, then replaces the placeholder address with the real address value of the function. This effecitvely "links" objects to each other, and the result is a combinarion of all object files with proper addresses placed where they need to.
+
+### Kernel entry
+
+So why do we care about compiler and linker? Because we can now have a separate assembler code statically at the beggining of our Kernel image with the solve purpose of finding `main` and jumping to it. It'll declare that the address of `main` will be defined by the linker when linking this file with the Kernel object file.
+
+```assembler
+[bits 32]
+[extern main]   ; This tells the linker that this address should be resolved to a symbol called `main`.
+
+call main       ; We jump to `main` and wait until it returns, which should be never.
+```
+
+This file is canonically called "kernel entry`. It's in assembler because we want to tell the CPU exactly what are the steps to take in order to execute the `main` function in the Kernel. Now we can link both object files like so:
+
+```bash
+$ ld -o kernel.img -Ttext 0x1000 kernel_entry.o kernel.o --oformat binary
+```
+
+The linker will keep the same order of the object files in the output, so in this case `kernel_entry.o` will be right in front of `kernel.o`. `--Ttext` behaves like `ORG` in assembler, it shifts all the addresses in the output binary to the given value, in this case we shift addresses to `0x1000`, so the bootloader knows exactly where to jump to land on the Kernel entry code.
+
+### From power-on to Kernel
+
+The steps we take are:
+
+1. Power on.
+2. BIOS (UEFI) runs POST.
+3. BIOS looks for a bootloader and jumps to it.
+4. Bootloader loads the Kernel and switches to 32 bit protected mode.
+5. Bootloader jumps to Kernel entry.
+6. Kernel entry jumps to Kernel `main` function.
+7. Kernel `main` function is executed.
+
+At this point we can now switch our development to C (although we reserve the right to use assembler when necessary).
 
 ## First functions.
 
