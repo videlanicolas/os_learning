@@ -1,12 +1,14 @@
 // Kernel main code.
 
-#define TXT_VIDEO_MEM 0xb8000
+#include "io.h"
+
+#define TXT_VIDEO_MEM 	0xb8000
 
 char cursor_x = 0;
 char cursor_y = 0;
 
 // Print a message to the screen, while saving the position of a cursor.
-void kprint(char *message) {
+void printk(char *message) {
 	char *video_mem_p = (char *) TXT_VIDEO_MEM;
 
 	// We need to move the video memory up to the point where we should write our next line.
@@ -37,6 +39,10 @@ void kprint(char *message) {
 	if (cursor_y >= 25) cursor_y = 0;
 }
 
+void printhex(char *hex) {
+
+}
+
 // Clear the screen, essentially deletes all video memory in VGA text mode.
 void clear() {
 	// VGA text mode is 80x25 characters, that's 2k characters, or 4k Words if we add the attributes.
@@ -50,9 +56,17 @@ void clear() {
 }
 
 void main() {
+	// Initialize the serial console.
+	if (init_com1()) {
+		// Failed to initialize COM1.
+		printk("COM1 error.");
+	}
+
 	// Clear the screen of all the BIOS and bootloader output.
 	clear();
 	// Print a string to tell the world we made it here.
-	kprint("Hello World!");
-	kprint("We can now print strings in new lines!");
+	printk("Hello World!");
+
+	char message[] = "Hello from the serial console!";
+	write_serial(message, sizeof(message));
 }

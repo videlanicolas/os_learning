@@ -171,16 +171,118 @@ How does Linux solves this? It has a function called [printk](https://www.kernel
 The function should take the string we want to print as parameter, but also should take the address in memory we want to print this character. The caller of this function should not have to worry about where in memory it needs to write the byte, this function should take that into account and only accept a string. Given we're in VGA text mode we know the screen size is 80x25 characters long, so we can implement some logic to save the state of a "cursor" and print a new line everytime its called.
 
 ```c
-void kprint(char *message) {
-	// Get the video memory address we want. This should be 0xb8000 plus the cursor lines we added before.
+#define TXT_VIDEO_MEM 0xb8000
 
-	// Loop over message, byte by byte, and copy it to video memory.
-	loop until *message == 0 {
+char cursor_x = 0;
+char cursor_y = 0;
+
+// Print a message to the screen, while saving the position of a cursor.
+void printk(char *message) {
+	char *video_mem_p = (char *) TXT_VIDEO_MEM;
+
+	// We need to move the video memory up to the point where we should write our next line.
+	// 80 x 2 = 160, the amount of bytes we need to move for each line.
+	video_mem_p += 160*cursor_y;
+
+	// Loop over the message until we find the NULL character.
+	while (*message != 0) {
+		// Write the character.
 		*video_mem_p++ = *message++;
-		// White character on black background.
-		*video_mem_p++ = 0x0f;
-		// Update X and Y accordingly.
+		// White character on a black background.
+		*video_mem_p++ = 0x0F;
+
+		// We printed one character, so add 1 to X.
+		cursor_x++;
+		// If we reached the end of the line, do a new line.
+		if (cursor_x >= 80) {
+			cursor_x = 0;
+			cursor_y++;
+			// If we reached the end of the screen, go to the top.
+			// TODO: Implement scrolling.
+			if (cursor_y >= 25) cursor_y = 0;
+		}
 	}
-	// Add a cursor line, mimicking a new line.
+	// Update cursors.
+	cursor_x = 0;
+	cursor_y++;
+	if (cursor_y >= 25) cursor_y = 0;
 }
-``` 
+```
+
+We should also have a way to print numbers (decimal and hexadecimal) to the screen:
+
+TODO: Show how to print numbers.
+
+### Serial console
+
+While printing stuff to the screen is great, we only have so much space to print information. After filling the screen with logs we're going to have to clear the screen to keep printing stuff, which makes the old log lines disappear. To avoid this we should have the ability to print to the serial console.
+
+Serial port communication is a legacy way to communicate between devices, this has been deprecated in favour of USB. Still, hardware today supports serial ports, and luckily for us they are way easier to implement than a USB driver. Serial ports have a baud rate, this represents the amout of symbols that can transmit within a second. A symbol can be anything, it can be a byte representation or 8 bits, it could also be 4 bits. Generally serial ports configure their symbol to be 8 bits + 1 stop bit, meaning they'll transmit 8 bits and then 1 bit to indicate the end of the transmitted byte. We're going to choose the highest baud rate available to us, 115200 symbols per second. This is fine for new shiny hardware, but old or slow hardware might not be able to talk to us at this speed. It's generally agreed that a speed of 9600 symbols per second should be fine for everyone to handle, so if we ever need to deploy this OS on slow hardware then it would be safer to use this speed instead.
+
+Serial ports also have parity checks, this forces the receiver to add up all the 1s and check if the sum is ODD or EVEN (it can be either way, it's configurable). The receiver gets an extra bit that converts the sum to the correct parity, if at least 1 bit suffered from an error transmission then the receiver can take notice of this. This will not save the receiver from more than 1 bit changes. This party check was made during a time were hardware was generally unreliable, and one was not 100% sure bits will arrive intact at their destination. These days we have way more reliable hardware and we don't require parity checks anymore.
+
+The protocol we're going to use here is the same as the one adopted worldwide: 8 bits, 1 stop bit, no parity checks, or 8N1 for short.
+
+[Here](https://wiki.osdev.org/Serial_Ports) are the details of how to setup the serial port, but in a very crude summary:
+
+* There are multiple serial ports available (COM1 through COM8), although COM1 and COM2 are unofficially standardized.
+* COM1 (IO port `0x3F8`) defines registers depending on the offset of the IO port address.
+	* Reads on `0x3F8` will return a byte transmitted to us, and writing to `0x3F8` will send a byte through the port.
+	* `0x3F8` + 1 is the Interrupt Enable Register.
+	* `0x3F8` + 2 is the FIFO control register.
+	* And so on...
+
+We first need to initialize the serial port and test it's working properly. To do this we set multiple registers on a precise order, by writing bytes out through the port. We also set the serial port in "loopback" mode to test if we receive a byte we transmit ourselves.
+
+```c
+// Initializes COM1 port: https://wiki.osdev.org/Serial_Ports
+// We'll do 8N1, 115200 baud.
+uint8_t init_com1() {
+	// Disable all interrupts while we initialize COM1.
+	outb(COM1 + 1, 0x00);
+
+	// Setting the baud rate to 115200, this means having a divisor of 1.
+	// To do this we need to do the following:
+	// Set the most significant bit of the Line Control Register. This is the DLAB bit, and allows access to the divisor registers.
+	// Send the least significant byte of the divisor value to [PORT + 0].
+	// Send the most significant byte of the divisor value to [PORT + 1].
+	// Clear the most significant bit of the Line Control Register.
+
+	outb(COM1 + 3, 0x80);		// Set bit 7, this is DLAB bit.
+	outb(COM1, 0x01);			// Set the LSB of the divisor value. We just want 1.
+	outb(COM1 + 1, 0x00);		// Set the MSB of the divisor value, this should be 0.
+	outb(COM1 + 3, 0x00);		// Clear bit 7 to set the divisor.		
+
+	// Set the parity, stop and data bits.
+	// We're going to choose 8N1, the default everywhere:
+	// * 8 bits of data.
+	// * No parity.
+	// * 1 stop bit.
+    outb(COM1 + 3, 0x03);			// 8N1, no break bit, no DLAB.
+
+	// FIFO register:
+	// * Enable FIFO.
+	// * Clear FIFO input/output buffers.
+	// * Set interrupt at 8 bits, this means we're going to get interrupted when there's at least 1 byte at the receiving buffer.
+	outb(COM1 + 2, 0xC7);
+
+    // Modem Control Register.
+    // Initialize the IRQ.
+    outb(COM1 + 4, 0x0B);
+
+    // Now enable loopback mode, to test the serial TX/RX lines are working.
+    outb(COM1 + 4, 0x1E);
+
+    outb(COM1, 0x55);               // Send 0x55 (alternating 1s and 0s).
+
+    // Read the byte, it should be the same byte we sent.
+    if (inb(COM1) != 0x55) {
+        return 1;
+    }
+    
+    // If we're here then we passed the test, disable loopback in COM1
+    outb(COM1 + 4, 0x0F);
+
+    return 0;
+}
+```

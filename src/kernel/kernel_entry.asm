@@ -8,7 +8,9 @@
 [bits 32]
 [extern main]	; This tells the linker that there is a symbol 'main' somewhere outside this file, and when it links it it should replace
 		; this label with the correct address that the function 'main' was called.
+global _start
 
-call main	; Jump to our Kernel code.
+_start:
+	call main	; Jump to our Kernel code.
 
-jmp $		; If we return then just hang here (this should never happen in a real OS).
+	jmp $		; If we return then just hang here (this should never happen in a real OS).
