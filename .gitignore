@@ -29,3 +29,8 @@ docs/build
 # Editor backup files #
 #######################
 *~
+
+# Misc files #
+##############
+
+serial.log
