@@ -8,3 +8,17 @@ The main resource website is [OS dev wiki](https://wiki.osdev.org/), but in ther
 ## OS devlog
 
 I documented all my progress at https://learning-os-from-scratch.readthedocs.io/en/latest, so you can read that to deep dive into all the things I learnt from developing this OS.
+
+### Getting started
+
+Install Sphinx:
+
+```bash
+$ pip install -U sphinx sphinx-autobuild
+```
+
+Run a local build:
+
+```bash
+$ sphinx-autobuild source build
+```

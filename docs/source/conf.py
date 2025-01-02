@@ -6,18 +6,20 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Learning OS from scratch'
-copyright = '2024, Nicolas Videla'
+project = 'OS Learning'
+copyright = '2025, Nicolas Videla'
 author = 'Nicolas Videla'
+release = '2025'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["myst_parser"]
+extensions = ['sphinx.ext.todo']
 
 templates_path = ['_templates']
 exclude_patterns = []
-source_suffix = {'.md': 'markdown'}
+
+todo_include_todos = True 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
