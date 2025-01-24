@@ -309,3 +309,51 @@ We first need to initialize the serial port and test it's working properly. To d
 
 		return 0;
 	}
+
+Now we define two handy assembler-based functions to read a byte from the port and write a byte to the port.
+
+.. code-block:: c
+
+	// Handy function to output a byte through a port.
+	static inline void outb(uint16_t port, uint8_t val)
+	{
+		__asm__ volatile ( "outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
+	}
+
+	// Handy function to get a byte input from a port.
+	static inline uint8_t inb(uint16_t port)
+	{
+		uint8_t ret;
+		__asm__ volatile ( "inb %w1, %b0"
+					: "=a"(ret)
+					: "Nd"(port)
+					: "memory");
+		return ret;
+	}
+
+And we tie it all up with a `write_serial` function to print a line to the console (that is, ending with carriage return and new line).
+
+.. code-block:: c
+
+	void write_serial(char *message, uint16_t length) {
+		for (int i = 0; i < length; i++) {
+			// Wait until the tx buffer is empty.
+			while (tx_buffer_empty() == 0);
+
+			// Send the char out through the console.
+			outb(COM1, message[i]);
+		}
+
+		// Print a new line.
+		while (tx_buffer_empty() == 0);
+		outb(COM1, 0x0d);
+		while (tx_buffer_empty() == 0);
+		outb(COM1, 0x0a);
+	}
+
+It would be nice if we can add some sort of timestamp to the console line, so we know at which time a given message was written to the serial port. But how do we get the time?
+
+******************
+Time in the Kernel
+******************
+

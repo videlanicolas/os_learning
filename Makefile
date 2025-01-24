@@ -22,6 +22,9 @@ LD?=ld
 run: $(OS) | $(QEMU)
 	$(QEMU) -drive file=$<,format=raw,if=floppy -serial file:$(SERIAL_LOG)
 
+run_courses: $(OS) | $(QEMU)
+	$(QEMU) -display curses -drive file=$<,format=raw,if=floppy -serial file:$(SERIAL_LOG)
+
 $(OS): $(BOOTLOADER) $(KERNEL)
 	cat $^ > $@
 

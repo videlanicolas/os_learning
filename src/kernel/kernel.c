@@ -43,6 +43,15 @@ void printhex(char *hex) {
 
 }
 
+void printVGA(uint8_t x, uint8_t y, char *msg) {
+	char *c = (char*) (TXT_VIDEO_MEM + (x * 2) + 80 * 2 * y);
+	while(*msg != 0) {
+		*c = *msg;
+		c += 2;
+		msg++;
+	}
+}
+
 // Clear the screen, essentially deletes all video memory in VGA text mode.
 void clear() {
 	// VGA text mode is 80x25 characters, that's 2k characters, or 4k Words if we add the attributes.
@@ -55,18 +64,28 @@ void clear() {
 	}
 }
 
+// Halt the OS, clear the screen and print an error message.
+void panic(char *msg){
+	char *video_mem_p = (char *) TXT_VIDEO_MEM;	
+	for (int i=0; i<2000; i++) {
+		// Write the ASCII 0 byte, the NULL char.
+		*video_mem_p++ = 0;
+		// Light red on 
+		*video_mem_p++ = 0x1f;
+	}
+
+	printVGA(40, 12, msg);
+}
+
 void main() {
+	// Clear the screen of all the BIOS and bootloader output.
+	clear();
+
 	// Initialize the serial console.
 	if (init_com1()) {
 		// Failed to initialize COM1.
-		printk("COM1 error.");
+		panic("COM1 error.");
 	}
 
-	// Clear the screen of all the BIOS and bootloader output.
-	clear();
-	// Print a string to tell the world we made it here.
-	printk("Hello World!");
-
-	char message[] = "Hello from the serial console!";
-	write_serial(message, sizeof(message));
+	write_serial("Kernel booted!");
 }

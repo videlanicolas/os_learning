@@ -9,7 +9,7 @@ The main resource website is [OS dev wiki](https://wiki.osdev.org/), but in ther
 
 I documented all my progress at https://learning-os-from-scratch.readthedocs.io/en/latest, so you can read that to deep dive into all the things I learnt from developing this OS.
 
-### Getting started
+### Development
 
 Install Sphinx:
 
@@ -22,3 +22,19 @@ Run a local build:
 ```bash
 $ sphinx-autobuild source build
 ```
+
+## Getting started
+
+Install the required things:
+
+```bash
+$ sudo apt install qemu-system nasm
+```
+
+### Running
+
+```bash
+$ make run_courses
+```
+
+ALT + 2 then `quit`.

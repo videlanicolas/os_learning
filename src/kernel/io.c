@@ -77,13 +77,14 @@ uint8_t tx_buffer_empty() {
     return inb(COM1 + 5) & 0x20;
 }
 
-void write_serial(char *message, uint16_t length) {
-    for (int i = 0; i < length; i++) {
+void write_serial(char *message) {
+    while(*message != 0) {
         // Wait until the tx buffer is empty.
         while (tx_buffer_empty() == 0);
 
         // Send the char out through the console.
-        outb(COM1, message[i]);
+        outb(COM1, *message);
+        message++;
     }
 
     // Print a new line.
